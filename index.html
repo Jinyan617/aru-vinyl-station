@@ -643,7 +643,7 @@
     <div class="bg-blur" id="bgBlur"></div>
     <div class="player-inner">
       <div class="dj-banner" id="djBanner">
-        <span id="djBannerText">🎧 锦言正在为你放这首</span>
+        <span id="djBannerText">🎧 Partner正在为你放这首</span>
         <span style="opacity:0.75;font-size:10.5px;">点击黑胶即播</span>
       </div>
       <div class="turntable" id="turntable" title="点击切换播放/暂停">
@@ -694,7 +694,7 @@
       </div>
       <div id="liveReplyBox" style="display:none;width:100%;margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(243,198,165,0.12);border:1px solid rgba(243,198,165,0.32);font-size:12.5px;line-height:1.6;color:var(--text);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:11px;color:var(--accent);font-weight:600;">
-          <span id="liveReplyStatus">💌 锦言正在回信（留在本页听歌别切走，写完再回聊天）…</span>
+          <span id="liveReplyStatus">💌 Partner正在回信（留在本页听歌别切走，写完再回聊天）…</span>
           <button class="ghost-op" id="btnCloseLiveReply">收起</button>
         </div>
         <div id="liveReplyText" style="white-space:pre-wrap;word-break:break-word;max-height:160px;overflow-y:auto;"></div>
@@ -717,8 +717,8 @@
       <div class="composer-top">
         <span>以谁的身份写这一句：</span>
         <div class="author-switch">
-          <button class="author-pill active" id="pickAuthorA">秋秋</button>
-          <button class="author-pill" id="pickAuthorB">锦言</button>
+          <button class="author-pill active" id="pickAuthorA">User</button>
+          <button class="author-pill" id="pickAuthorB">Partner</button>
         </div>
       </div>
       <div class="quote-preview-chip" id="quoteChip">
@@ -787,16 +787,16 @@
           "title": { "type": "string", "description": "歌名" },
           "artist": { "type": "string", "description": "歌手" },
           "cover": { "type": "string", "description": "封面图片 URL" },
-          "tag": { "type": "string", "description": "标签，如 锦言日推拾贝" },
+          "tag": { "type": "string", "description": "标签，如 Partner日推拾贝" },
           "note": { "type": "string", "description": "第一条听歌批注" },
           "author": { "type": "string", "description": "批注署名，默认使用 Ta 的署名" },
           "lyrics": { "type": "string", "description": "纯文本歌词，换行分隔" },
           "audioUrl": { "type": "string", "description": "可选音频直链" },
-          "pickedBy": { "type": "string", "description": "是谁放的这首歌，如 锦言" }
+          "pickedBy": { "type": "string", "description": "是谁放的这首歌，如 Partner" }
         },
         "required": ["id", "title", "artist"]
       },
-      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs.slice() : []; const idx = songs.findIndex(s => String(s.id) === String(a.id)); const item = { id: String(a.id), title: a.title, artist: a.artist, cover: a.cover || '', tag: a.tag || '锦言给你放的歌', note: a.note || '', lyrics: a.lyrics || '', audioUrl: a.audioUrl || '', pickedBy: a.pickedBy || '锦言' }; if (idx >= 0) { songs[idx] = { ...songs[idx], ...item }; } else { songs.unshift(item); } const commentsBySong = { ...(cur.commentsBySong || {}) }; if (a.note) { const list = Array.isArray(commentsBySong[String(a.id)]) ? commentsBySong[String(a.id)].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || '锦言', role: 'ai', text: a.note, time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[String(a.id)] = list; } PolarisRoom.patchState({ songs, commentsBySong, currentIndex: idx >= 0 ? idx : 0 }); return { ok: true, total: songs.length, activeTitle: item.title };"
+      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs.slice() : []; const idx = songs.findIndex(s => String(s.id) === String(a.id)); const item = { id: String(a.id), title: a.title, artist: a.artist, cover: a.cover || '', tag: a.tag || 'Partner给你放的歌', note: a.note || '', lyrics: a.lyrics || '', audioUrl: a.audioUrl || '', pickedBy: a.pickedBy || 'Partner' }; if (idx >= 0) { songs[idx] = { ...songs[idx], ...item }; } else { songs.unshift(item); } const commentsBySong = { ...(cur.commentsBySong || {}) }; if (a.note) { const list = Array.isArray(commentsBySong[String(a.id)]) ? commentsBySong[String(a.id)].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || 'Partner', role: 'ai', text: a.note, time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[String(a.id)] = list; } PolarisRoom.patchState({ songs, commentsBySong, currentIndex: idx >= 0 ? idx : 0 }); return { ok: true, total: songs.length, activeTitle: item.title };"
     },
     {
       "id": "addComment",
@@ -805,13 +805,13 @@
         "type": "object",
         "properties": {
           "songId": { "type": "string", "description": "歌曲 ID；省略时写到当前正在看的那首" },
-          "author": { "type": "string", "description": "署名，如 锦言" },
+          "author": { "type": "string", "description": "署名，如 Partner" },
           "text": { "type": "string", "description": "批注正文" },
           "quote": { "type": "string", "description": "可选，引用的歌词句子" }
         },
         "required": ["text"]
       },
-      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs : []; const idx = Math.max(0, Math.min(cur.currentIndex || 0, Math.max(0, songs.length - 1))); const targetId = String(a.songId || (songs[idx] && songs[idx].id) || ''); if (!targetId) return { ok: false, reason: 'no_song' }; const commentsBySong = { ...(cur.commentsBySong || {}) }; const list = Array.isArray(commentsBySong[targetId]) ? commentsBySong[targetId].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || '锦言', role: 'ai', text: a.text, quote: a.quote || '', time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[targetId] = list; PolarisRoom.patchState({ commentsBySong }); return { ok: true, songId: targetId, count: list.length };"
+      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs : []; const idx = Math.max(0, Math.min(cur.currentIndex || 0, Math.max(0, songs.length - 1))); const targetId = String(a.songId || (songs[idx] && songs[idx].id) || ''); if (!targetId) return { ok: false, reason: 'no_song' }; const commentsBySong = { ...(cur.commentsBySong || {}) }; const list = Array.isArray(commentsBySong[targetId]) ? commentsBySong[targetId].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || 'Partner', role: 'ai', text: a.text, quote: a.quote || '', time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[targetId] = list; PolarisRoom.patchState({ commentsBySong }); return { ok: true, songId: targetId, count: list.length };"
     },
     {
       "id": "listSongs",
