@@ -53,6 +53,20 @@
 | **2. 私人反代域名 (`API_BASE`) 暴露风险** | 如果把写死自己 VPS 域名的 HTML 直接公开分享，所有人都会走你的 VPS 接口请求音源，可能触发网易云 IP 频控限制 | **公开分享 HTML 时，请使用本仓库的脱敏版**（已将 `API_BASE` 设为示例地址 `https://your-netease-api.example.com/netease`），或在自己的 Nginx 上配置简单的访问限流 (`limit_req`) |
 | **3. 默认歌单与私密批注泄露** | 自己日常使用的卡片状态与 `DEFAULT_SONGS` 里往往包含伴侣真名和私密悄悄话 | 使用卡片分享功能时，可勾选/取消勾选 `shareContent` 中的歌单与批注；推送到 GitHub 公开仓库时，请使用已清除私人署名的通用版模板 |
 
+
+### 3. 🪤 真实开发踩坑实录（给后来者的避坑笔记）
+
+这是我们在打磨黑胶电台一下午真实踩过、并已全部修复的 6 个经典坑：
+
+| 踩坑序号 | 当时的翻车现象 | 真凶原因 | 最终怎么填平的 |
+|---|---|---|---|
+| **坑 1：点击分享按钮后，切回聊天页面直接把 AI 打断卡死** | 代码里写了 `await window.PolarisRoom.chat(...)` 傻等 AI 整段回复生成完才松手；用户等不及切回聊天页看反应时，卡片 WebView 被挂起，请求当场被系统掐断 | `PolarisRoom.chat()` 请求由卡片窗口持有，卡片一旦退到后台休眠，未完成的流式请求会被 `AbortSignal` 终止 | 接入 `PolarisRoom.chat({ message, onText })` 的 **`onText` 实时流式回传**，在唱机下方焊上「💌 实时回信小信笺」，边听歌边看 AI 逐字打字，提示写完后再切回聊天 |
+| **坑 2：用户点分享发进聊天框的 `<aru-card>` 变成了一坨纯文本代码** | 以为在 `PolarisRoom.chat({ message })` 里塞入 `<aru-card>` 标签就能直接渲染成卡片 | Aru 的安全机制规定：**只有 AI（assistant）发出的气泡才会解析渲染 `<aru-card>` 原生组件**，用户（user）发出的标签一律按纯文本转义显示 | 按钮只发送极简干净的一句 `🎵 给你递一张黑胶：《歌名》 - 歌手`，由 AI 收到后在回复里渲染 `<aru-card>` 共听卡 |
+| **坑 3：AI 回复里的 `<aru-card>` 偶尔漏出半截 `<aru-callout>` 原始标签** | 卡片下半部分的标签没有被渲染，原样吐出了代码 | `<aru-card>` 内部在 `<aru-divider/>` 后多层换行嵌套 `<aru-callout>` 时容易触发解析器闭合识别失败 | 去掉多余的 `<aru-callout>` 嵌套，保持 `<aru-app><aru-card>` 单行紧凑闭合结构 |
+| **坑 4：左右切歌键 `⏮` `⏭` 怎么点都切不动，只能往下滑列表选歌** | 点下一首按钮毫无反应，永远停在同一首 | 电台处于 `single`（单曲循环）模式时，`nextIndex()` 直接写了 `if (playMode === "single") return currentIndex`，导致手动按下一首也原地踏步 | 将 `btnPrev` / `btnNext` 改为手动点击时强制 `(currentIndex + 1) % len` 切换并重置 `currentSongKey` 自动起播 |
+| **坑 5：切了新歌点播放没声音，提示「点一下黑胶开始播」或买到了灰歌 ID** | 1. 第一次点播放先去 `await fetchDirectAudioUrl()` 请求直链，耗时半秒错过了 iOS 的用户手势激活窗口，被苹果静音锁拦截；<br>2. 网易云部分老歌 ID（如旧版《够爱》`4875306`）已下架灰掉 | iOS WebView 要求 `audioEl.play()` 必须在手指点击的同一同步调用栈内触发；灰歌 ID 无法返回音频流 | 1. 点击瞬间立即将 `audioEl.src` 指向 `${API_BASE}/audio?id=${sid}`（后端 302 毫秒级直连）并同步调用 `audioEl.play()` 占住音响通道；<br>2. 换用有版权的 Live / 重制版真声 ID |
+| **坑 6：在「听歌批注本」写了字，AI 根本不知道** | 用户在电台批注框写下「我还是听不到这首歌」，AI 毫无反应 | 原先点「写下」按钮只调用了 `PolarisRoom.patchState` 静默保存在卡片本地，没有通知 AI | 将「写下」按钮与 `streamChatInStation` 联动，保存批注的同时自动拍一下 AI，AI 收到后调用 `addComment` 工具直接把回信写进同一首歌的批注本里 |
+
 ---
 
 ## 四、 开源协议与致谢
