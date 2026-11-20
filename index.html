@@ -580,6 +580,33 @@
     font-size: 12px;
     cursor: pointer;
   }
+  .group-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .group-tabs::-webkit-scrollbar { display: none; }
+  .group-pill {
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--muted);
+    border-radius: 999px;
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  .group-pill.active {
+    background: rgba(243, 198, 165, 0.18);
+    border-color: rgba(243, 198, 165, 0.45);
+    color: var(--accent);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -628,8 +655,8 @@
         <button class="pill-action" id="btnExportJSON">📤 导出歌单备份</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;">
-        <button class="tiny-chip-btn" id="btnSyncPlaylist">☁️ 让 Ta 同步歌单</button>
-        <button class="tiny-chip-btn" id="btnSyncDaily">☀️ 让 Ta 挑今日日推</button>
+        <button class="tiny-chip-btn" id="btnSyncPlaylist">☁️ 让Partner同步歌单</button>
+        <button class="tiny-chip-btn" id="btnSyncDaily">☀️ 让Partner挑今日日推</button>
         <button class="tiny-chip-btn" id="btnShowImport">📥 从 JSON 导入歌单</button>
       </div>
       <div id="importWrap" style="display:none;flex-direction:column;gap:6px;">
@@ -685,8 +712,8 @@
 
       <div class="link-row">
         <a class="pill-action primary" id="openNeteaseLink" target="_blank" rel="noopener">🎵 去网易云听</a>
-        <button class="pill-action" id="btnShareToChat">💌 分享给 Ta</button>
-        <button class="pill-action" id="btnAskJinyan">🎧 让 Ta 放歌</button>
+        <button class="pill-action" id="btnShareToChat">💌 分享给Partner</button>
+        <button class="pill-action" id="btnAskJinyan">🎧 让Partner放歌</button>
         <button class="pill-action" id="btnSavePoster">🖼 存黑胶海报</button>
       </div>
       <div style="width:100%;margin-top:6px;display:flex;justify-content:flex-end;">
@@ -751,6 +778,12 @@
         <button class="tiny-chip-btn" id="btnToggleAdd">＋ 加歌</button>
       </div>
     </div>
+    <div class="group-tabs" id="groupTabs">
+      <button class="group-pill active" data-group="all">全部</button>
+      <button class="group-pill" data-group="work">☕ 上班听</button>
+      <button class="group-pill" data-group="sport">🏃‍♀️ 运动听</button>
+      <button class="group-pill" data-group="sleep">🌙 睡前听</button>
+    </div>
     <div class="track-list" id="trackList"></div>
     <div class="panel-drawer" id="addForm">
       <div class="note-input-row">
@@ -792,11 +825,25 @@
           "author": { "type": "string", "description": "批注署名，默认使用 Ta 的署名" },
           "lyrics": { "type": "string", "description": "纯文本歌词，换行分隔" },
           "audioUrl": { "type": "string", "description": "可选音频直链" },
-          "pickedBy": { "type": "string", "description": "是谁放的这首歌，如 Partner" }
+          "pickedBy": { "type": "string", "description": "是谁放的这首歌，如 Partner" },
+          "group": { "type": "string", "description": "场景分组：work(上班听)/sport(运动听)/sleep(睡前听)" }
         },
         "required": ["id", "title", "artist"]
       },
-      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs.slice() : []; const idx = songs.findIndex(s => String(s.id) === String(a.id)); const item = { id: String(a.id), title: a.title, artist: a.artist, cover: a.cover || '', tag: a.tag || 'Partner给你放的歌', note: a.note || '', lyrics: a.lyrics || '', audioUrl: a.audioUrl || '', pickedBy: a.pickedBy || 'Partner' }; if (idx >= 0) { songs[idx] = { ...songs[idx], ...item }; } else { songs.unshift(item); } const commentsBySong = { ...(cur.commentsBySong || {}) }; if (a.note) { const list = Array.isArray(commentsBySong[String(a.id)]) ? commentsBySong[String(a.id)].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || 'Partner', role: 'ai', text: a.note, time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[String(a.id)] = list; } PolarisRoom.patchState({ songs, commentsBySong, currentIndex: idx >= 0 ? idx : 0 }); return { ok: true, total: songs.length, activeTitle: item.title };"
+      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs.slice() : []; const idx = songs.findIndex(s => String(s.id) === String(a.id)); const item = { id: String(a.id), title: a.title, artist: a.artist, cover: a.cover || '', tag: a.tag || 'Partner给你放的歌', note: a.note || '', lyrics: a.lyrics || '', audioUrl: a.audioUrl || '', pickedBy: a.pickedBy || 'Partner', group: a.group || '' }; if (idx >= 0) { songs[idx] = { ...songs[idx], ...item }; } else { songs.unshift(item); } const commentsBySong = { ...(cur.commentsBySong || {}) }; if (a.note) { const list = Array.isArray(commentsBySong[String(a.id)]) ? commentsBySong[String(a.id)].slice() : []; const cfg = cur.config || {}; list.push({ id: 'c_' + Date.now(), author: a.author || cfg.userB || 'Partner', role: 'ai', text: a.note, time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), liked: false }); commentsBySong[String(a.id)] = list; } PolarisRoom.patchState({ songs, commentsBySong, currentIndex: idx >= 0 ? idx : 0 }); return { ok: true, total: songs.length, activeTitle: item.title };"
+    },
+    {
+      "id": "setSongGroup",
+      "description": "设置指定歌曲的场景分组（work上班听/sport运动听/sleep睡前听）",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "songId": { "type": "string", "description": "歌曲 ID" },
+          "group": { "type": "string", "description": "work | sport | sleep | ''" }
+        },
+        "required": ["songId", "group"]
+      },
+      "handler": "const a = PolarisTool.args || {}; const cur = PolarisRoom.getState() || {}; const songs = Array.isArray(cur.songs) ? cur.songs.slice() : []; const idx = songs.findIndex(s => String(s.id) === String(a.songId)); if (idx < 0) return { ok: false, reason: 'not_found' }; songs[idx] = { ...songs[idx], group: a.group || '' }; PolarisRoom.patchState({ songs }); return { ok: true, title: songs[idx].title, group: songs[idx].group };"
     },
     {
       "id": "addComment",
@@ -899,6 +946,16 @@ let playing = false;
 let progress = 0;
 let tickTimer = null;
 let onlyFav = false;
+let activeGroup = "all"; // all | work | sport | sleep
+
+function inferSongGroup(s) {
+  if (!s) return "work";
+  if (s.group === "work" || s.group === "sport" || s.group === "sleep") return s.group;
+  const txt = `${s.title || ""} ${s.tag || ""}`.toLowerCase();
+  if (/够爱|o children|can't get high|运动|暴汗|燃/.test(txt)) return "sport";
+  if (/棠梨|雪化作泪滴|all too well|烟火|褪黑素|睡前|熬夜|被窝/.test(txt)) return "sleep";
+  return "work";
+}
 let lyricsExpanded = false;
 let activeRole = "user";
 let pendingQuote = "";
@@ -1075,6 +1132,20 @@ async function fetchCoverIfNeeded(song) {
     }
   } catch {}
 }
+function prefetchNextTracks() {
+  const songs = appState.songs || [];
+  const base = appState.currentIndex || 0;
+  for (let offset = 0; offset < Math.min(3, songs.length); offset++) {
+    const s = songs[(base + offset) % songs.length];
+    if (!s) continue;
+    const sid = String(s.id || "");
+    if (/^\d+$/.test(sid)) {
+      if (!audioUrlCache[sid]) fetchDirectAudioUrl(sid).catch(() => {});
+      if (!lrcCache[sid]) fetchLrcIfNeeded(s).catch(() => {});
+    }
+  }
+}
+
 async function syncAudioSource(song) {
   const sid = String(song.id || "");
   const badge = $("audioBadge");
@@ -1129,6 +1200,7 @@ async function syncAudioSource(song) {
       }
     }).catch(() => {});
   }
+  prefetchNextTracks();
 }
 
 function render() {
@@ -1243,9 +1315,22 @@ function render() {
   }
   renderLyricsOnly();
   $("btnFilterFav").classList.toggle("active", onlyFav);
-  const indexedSongs = songs.map((s, i) => ({ s, i })).filter(({ s }) => !onlyFav || (appState.likedIds || []).includes(String(s.id)));
+  const counts = { all: songs.length, work: 0, sport: 0, sleep: 0 };
+  songs.forEach(s => { counts[inferSongGroup(s)]++; });
+  const groupLabels = { all: `全部 (${counts.all})`, work: `☕ 上班听 (${counts.work})`, sport: `🏃‍♀️ 运动听 (${counts.sport})`, sleep: `🌙 睡前听 (${counts.sleep})` };
+  document.querySelectorAll("#groupTabs .group-pill").forEach(btn => {
+    const g = btn.dataset.group;
+    btn.classList.toggle("active", g === activeGroup);
+    if (groupLabels[g]) btn.textContent = groupLabels[g];
+    btn.onclick = () => { activeGroup = g; render(); };
+  });
+  const indexedSongs = songs.map((s, i) => ({ s, i })).filter(({ s }) => {
+    const favOk = !onlyFav || (appState.likedIds || []).includes(String(s.id));
+    const grpOk = activeGroup === "all" || inferSongGroup(s) === activeGroup;
+    return favOk && grpOk;
+  });
   if (indexedSongs.length === 0) {
-    $("trackList").innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 2px;">还没有红心喜欢的歌哦。</div>`;
+    $("trackList").innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 2px;">这个分组里还没有歌哦，可以点「＋ 加歌」放进来。</div>`;
   } else {
     $("trackList").innerHTML = indexedSongs.map(({ s, i }) => `
       <div class="track-item ${i === idx ? 'active' : ''}" data-idx="${i}">
@@ -2007,6 +2092,7 @@ async function init() {
     window.PolarisRoom.save();
   }
   render();
+  prefetchNextTracks();
   const todayKey = new Date().toISOString().slice(0, 10);
   if ((appState.config || {}).lastDailySyncDate !== todayKey && window.PolarisRoom && typeof window.PolarisRoom.chat === "function") {
     appState.config = { ...(appState.config || DEFAULT_CONFIG), lastDailySyncDate: todayKey };
